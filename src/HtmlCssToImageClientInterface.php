@@ -116,20 +116,37 @@ interface HtmlCssToImageClientInterface
      *
      * This method performs no HTTP request.
      *
-     * @param string|CreateTemplatedImageRequest $templateIdOrRequest Template
-     *        ID or complete template request.
-     * @param array<string, mixed> $templateValues Values used with an ID.
-     * @param int|null $templateVersion Optional version used with an ID.
+     * @param CreateTemplatedImageRequest $request Complete template request.
      * @param RenderImageOptions|null $renderOptions Optional format, DPI,
      *        resize, and crop settings included in the signature. Its format
-     *        takes precedence over the request object's format.
+     *        takes precedence over the request's format.
      *
      * @return string Signed image URL safe to expose to a frontend.
      *
      * @throws \JsonException When a template value cannot be JSON encoded.
      */
     public function generateTemplatedImageUrl(
-        string|CreateTemplatedImageRequest $templateIdOrRequest,
+        CreateTemplatedImageRequest $request,
+        ?RenderImageOptions $renderOptions = null,
+    ): string;
+
+    /**
+     * Generate a signed on-demand URL from a template ID and values.
+     *
+     * This convenience method performs no HTTP request.
+     *
+     * @param string $templateId Identifier of the saved template.
+     * @param array<string, mixed> $templateValues Template variable values.
+     * @param int|null $templateVersion Specific version, or latest when null.
+     * @param RenderImageOptions|null $renderOptions Optional format, DPI,
+     *        resize, and crop settings included in the signature.
+     *
+     * @return string Signed image URL safe to expose to a frontend.
+     *
+     * @throws \JsonException When a template value cannot be JSON encoded.
+     */
+    public function generateTemplatedImageUrlFromValues(
+        string $templateId,
         array $templateValues = [],
         ?int $templateVersion = null,
         ?RenderImageOptions $renderOptions = null,

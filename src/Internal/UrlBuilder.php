@@ -39,24 +39,12 @@ final readonly class UrlBuilder
     }
 
     /**
-     * @param array<string, mixed> $templateValues
-     *
      * @throws JsonException When a template value cannot be JSON encoded.
      */
     public function templated(
-        string|CreateTemplatedImageRequest $templateIdOrRequest,
-        array $templateValues = [],
-        ?int $templateVersion = null,
+        CreateTemplatedImageRequest $request,
         ?RenderImageOptions $renderOptions = null,
     ): string {
-        $request = is_string($templateIdOrRequest)
-            ? new CreateTemplatedImageRequest(
-                templateId: $templateIdOrRequest,
-                templateValues: $templateValues,
-                templateVersion: $templateVersion,
-            )
-            : $templateIdOrRequest;
-
         /** @var list<array{0: string, 1: string}> $pairs */
         $pairs = [];
         if ($request->templateVersion !== null && $request->templateVersion !== 0) {

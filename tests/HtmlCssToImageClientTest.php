@@ -284,7 +284,7 @@ final class HtmlCssToImageClientTest extends TestCase
     public function testTemplatedUrlUsesWhatwgEncodingAndValidHmac(): void
     {
         $client = new HtmlCssToImageClient(self::API_ID, self::API_KEY);
-        $url = $client->generateTemplatedImageUrl(
+        $url = $client->generateTemplatedImageUrlFromValues(
             'my-template',
             [
                 'title' => 'Hello world~*',
@@ -410,7 +410,7 @@ final class HtmlCssToImageClientTest extends TestCase
     public function testTemplateRenderOptionsAvoidValueCollisions(): void
     {
         $client = new HtmlCssToImageClient(self::API_ID, self::API_KEY);
-        $url = $client->generateTemplatedImageUrl(
+        $url = $client->generateTemplatedImageUrlFromValues(
             'template-id',
             [
                 'width' => 'template width',

@@ -115,7 +115,7 @@ Only HTML/CSS and URL requests can be batched. Empty `html` or `url` values in v
 The signed URL helpers perform no network request. They create the exact query string, sign it with HMAC-SHA256 using the API key, and return a URL that can be shared without exposing that key.
 
 ```php
-$templateUrl = $client->generateTemplatedImageUrl(
+$templateUrl = $client->generateTemplatedImageUrlFromValues(
     'your-template-id',
     ['title' => 'Rendered on demand'],
     templateVersion: 2,
@@ -130,18 +130,22 @@ $renderUrl = $client->generateCreateAndRenderUrl(
 );
 ```
 
-`generateTemplatedImageUrl()` also accepts a complete `CreateTemplatedImageRequest`. Both helpers accept `renderOptions`.
+Use `generateTemplatedImageUrl()` when you already have a complete `CreateTemplatedImageRequest`. Use `generateTemplatedImageUrlFromValues()` as a convenience when you have a template ID and values. Both methods accept `renderOptions`.
 
 ```php
 use HtmlCssToImage\ImageFormat;
+use HtmlCssToImage\Request\CreateTemplatedImageRequest;
 use HtmlCssToImage\Render\RenderImageOptions;
 
 $options = new RenderImageOptions(format: ImageFormat::WEBP, width: 1200, height: 630);
 
 $templateUrl = $client->generateTemplatedImageUrl(
-    'your-template-id',
-    ['title' => 'Rendered on demand'],
-    renderOptions: $options,
+    new CreateTemplatedImageRequest(
+        templateId: 'your-template-id',
+        templateValues: ['title' => 'Rendered on demand'],
+        templateVersion: 2,
+    ),
+    $options,
 );
 ```
 
@@ -245,7 +249,8 @@ if (isset($result) && $result instanceof ApiErrorResponse) {
 | `deleteImage($imageId)` | delete success or error response | Sends `DELETE /v1/image/{id}`. |
 | `deleteImageBatch($imageIds)` | delete success or error response | Sends `DELETE /v1/image/batch`. |
 | `imageUrl($imageId, $renderOptions = null)` | `string` | Builds an existing-image URL locally. |
-| `generateTemplatedImageUrl(...)` | `string` | Builds and signs a template URL locally. |
+| `generateTemplatedImageUrl($request, $renderOptions = null)` | `string` | Builds and signs a template URL from a request object locally. |
+| `generateTemplatedImageUrlFromValues(...)` | `string` | Builds and signs a template URL from an ID and values locally. |
 | `generateCreateAndRenderUrl(...)` | `string` | Builds and signs a URL screenshot locally. |
 
 `HtmlCssToImageClient` implements `HtmlCssToImageClientInterface`. Public request, response, PDF, and render/crop classes include PHPDoc for their constructors, properties, parameters, return types, exceptions, and IDE help.
