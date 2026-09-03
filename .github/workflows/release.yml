@@ -1,0 +1,147 @@
+# After CI succeeds for a push to main, creates the Git tag and GitHub Release
+# for the version declared in VERSION when it does not already exist.
+# Packagist then indexes the tag through its GitHub integration; no package
+# archive, Packagist API token, or GitHub Actions secret is required here.
+
+name: Release
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+    branches:
+      - main
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Release new version
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          coverage: none
+          tools: composer:v2
+
+      - name: Check release version
+        id: version
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          package_name="$(php -r '$data = json_decode(file_get_contents("composer.json"), true, 512, JSON_THROW_ON_ERROR); echo $data["name"];')"
+          package_version="$(tr -d '[:space:]' < VERSION)"
+          tag="v${package_version}"
+
+          if [[ ! "$package_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "VERSION must contain a stable semantic version such as 1.2.3." >&2
+            exit 1
+          fi
+
+          echo "package_name=${package_name}" >> "$GITHUB_OUTPUT"
+          echo "package_version=${package_version}" >> "$GITHUB_OUTPUT"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+
+          response="$(curl --silent --show-error --write-out $'\n%{http_code}' "https://packagist.org/packages/${package_name}.json")"
+          status_code="${response##*$'\n'}"
+          response_body="${response%$'\n'*}"
+          packagist_exists=false
+
+          case "$status_code" in
+            200)
+              if printf '%s' "$response_body" | RELEASE_VERSION="$package_version" php -r '
+                $data = json_decode(stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR);
+                $version = getenv("RELEASE_VERSION");
+                foreach (array_keys($data["package"]["versions"] ?? []) as $candidate) {
+                    if (preg_replace("/^v(?=\\d)/i", "", $candidate) === $version) {
+                        exit(0);
+                    }
+                }
+                exit(1);
+              '; then
+                packagist_exists=true
+                echo "${package_name} ${package_version} already exists on Packagist."
+              else
+                echo "${package_name} ${package_version} is not on Packagist."
+              fi
+              ;;
+            404)
+              echo "${package_name} is not registered on Packagist yet."
+              ;;
+            *)
+              echo "Packagist returned unexpected HTTP status ${status_code}." >&2
+              exit 1
+              ;;
+          esac
+
+          if git rev-parse --verify --quiet "refs/tags/${tag}" >/dev/null; then
+            tag_exists=true
+            echo "${tag} already exists."
+          else
+            tag_exists=false
+          fi
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            release_exists=true
+            echo "GitHub Release ${tag} already exists."
+          else
+            release_exists=false
+          fi
+
+          if [[ "$packagist_exists" == true && "$tag_exists" == false ]]; then
+            echo "Packagist has ${package_version}, but Git tag ${tag} is missing." >&2
+            exit 1
+          fi
+
+          if [[ "$tag_exists" == false ]]; then
+            echo "create_tag=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "create_tag=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [[ "$release_exists" == false ]]; then
+            echo "create_release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "create_release=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create version tag
+        if: steps.version.outputs.create_tag == 'true'
+        shell: bash
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag --annotate "$TAG" --message "Release $TAG"
+          git push origin "$TAG"
+
+      - name: Create GitHub Release
+        if: steps.version.outputs.create_release == 'true'
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
+          target_commitish: ${{ github.event.workflow_run.head_sha }}
+          generate_release_notes: true
+          draft: false
+          prerelease: false

@@ -264,6 +264,10 @@ composer analyse
 composer test
 ```
 
+## Releasing
+
+Packagist derives package versions from Git tags, so `composer.json` intentionally has no `version` field. To release, update `VERSION` in a pull request and merge it into `main`. After CI passes, the release workflow checks Packagist, creates the matching `vX.Y.Z` tag and GitHub Release when needed, and Packagist indexes the tag through its GitHub integration.
+
 ## License
 
 MIT
