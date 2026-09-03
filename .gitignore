@@ -1,0 +1,6 @@
+.DS_Store
+/vendor/
+/.phpstan.cache/
+/.phpunit.cache/
+/.phpunit.result.cache
+/composer.phar
