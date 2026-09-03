@@ -32,6 +32,7 @@ final readonly class HttpTransport
             [
                 'Authorization' => $this->authorizationHeader,
                 'Content-Type' => 'application/json',
+                'User-Agent' => LibraryInfo::userAgent(),
             ],
             self::encodeJson($payload),
         );
@@ -48,7 +49,10 @@ final readonly class HttpTransport
         string $path,
         ?array $payload = null,
     ): ResponseInterface {
-        $headers = ['Authorization' => $this->authorizationHeader];
+        $headers = [
+            'Authorization' => $this->authorizationHeader,
+            'User-Agent' => LibraryInfo::userAgent(),
+        ];
         $body = null;
         if ($payload !== null) {
             $headers['Content-Type'] = 'application/json';

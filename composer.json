@@ -24,6 +24,7 @@
   },
   "require": {
     "php": "^8.2",
+    "composer-runtime-api": "^2.0",
     "guzzlehttp/guzzle": "^7.15.2",
     "guzzlehttp/psr7": "^2.7",
     "psr/http-client": "^1.0",

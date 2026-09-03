@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HtmlCssToImage\Tests;
 
+use Composer\InstalledVersions;
 use GuzzleHttp\Psr7\Response;
 use HtmlCssToImage\HtmlCssToImageClient;
 use HtmlCssToImage\ImageFormat;
@@ -69,6 +70,15 @@ final class HtmlCssToImageClientTest extends TestCase
         self::assertSame(
             'Basic dXNlcl9pZDphcGlfa2V5',
             $request->getHeaderLine('Authorization'),
+        );
+        $version = InstalledVersions::getPrettyVersion(
+            'html-css-to-image/client',
+        );
+        self::assertNotNull($version);
+        $version = preg_replace('/^v(?=\d)/i', '', $version) ?? $version;
+        self::assertSame(
+            'HCTIPHP/' . preg_replace('/[^A-Za-z0-9._+-]/', '-', $version),
+            $request->getHeaderLine('User-Agent'),
         );
         $payload = json_decode((string) $request->getBody(), true, flags: JSON_THROW_ON_ERROR);
         self::assertSame('<h1>Test</h1>', $payload['html']);
@@ -480,6 +490,14 @@ final class HtmlCssToImageClientTest extends TestCase
         self::assertSame(
             'https://hcti.io/v1/image/folder%2Fimage%20id',
             (string) $http->requests[0]->getUri(),
+        );
+        self::assertStringStartsWith(
+            'HCTIPHP/',
+            $http->requests[0]->getHeaderLine('User-Agent'),
+        );
+        self::assertSame(
+            $http->requests[0]->getHeaderLine('User-Agent'),
+            $http->requests[1]->getHeaderLine('User-Agent'),
         );
         self::assertSame(
             ['ids' => ['one', 'two']],

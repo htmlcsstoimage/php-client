@@ -217,7 +217,7 @@ $client = new HtmlCssToImageClient(
 );
 ```
 
-The injected HTTP client remains caller-owned and is never closed or reconfigured by this package. Retry policy intentionally belongs to the application and can be added through the selected PSR-18 client's middleware or handler system.
+The injected HTTP client remains caller-owned and is never closed or reconfigured by this package. Every API request includes `HCTIPHP/<version>` as its `User-Agent`, including requests sent through an injected client. Retry policy intentionally belongs to the application and can be added through the selected PSR-18 client's middleware or handler system.
 
 ## Error handling
 
