@@ -24,7 +24,7 @@ abstract readonly class BaseCreateImageRequest implements BatchCreateImageReques
      * @param int|null $msDelay Additional pre-capture delay in milliseconds.
      * @param bool|null $renderWhenReady Wait for ScreenshotReady() in page JS.
      * @param bool|null $maxRenderOnce Render and save the image only once.
-     * @param bool|null $disableTwemoji Disable Twemoji fallback rendering.
+     * @param bool|null $disableTwemoji HTML/CSS images use Twemoji by default; true disables it. URL images inject Twemoji only with explicit false; null or true leaves the page unchanged.
      * @param 'light'|'dark'|null $colorScheme Emulated color scheme.
      * @param string|null $timezone Browser IANA timezone.
      * @param bool|null $viewportMobile Emulate a mobile viewport.

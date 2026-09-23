@@ -29,7 +29,7 @@ final readonly class CreateUrlImageRequest extends BaseCreateImageRequest
      * @param int|null $msDelay Additional pre-capture delay in milliseconds.
      * @param bool|null $renderWhenReady Wait for ScreenshotReady() in page JS.
      * @param bool|null $maxRenderOnce Render and save the image only once.
-     * @param bool|null $disableTwemoji Disable Twemoji fallback rendering.
+     * @param bool|null $disableTwemoji Set false to inject Twemoji. Null or true leaves the page's emoji handling unchanged, including its own scripts.
      * @param 'light'|'dark'|null $colorScheme Emulated color scheme.
      * @param string|null $timezone Browser IANA timezone.
      * @param bool|null $viewportMobile Emulate a mobile viewport.

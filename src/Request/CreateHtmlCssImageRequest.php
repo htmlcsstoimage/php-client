@@ -28,7 +28,7 @@ final readonly class CreateHtmlCssImageRequest extends BaseCreateImageRequest
      * @param int|null $msDelay Additional pre-capture delay in milliseconds.
      * @param bool|null $renderWhenReady Wait for ScreenshotReady() in page JS.
      * @param bool|null $maxRenderOnce Render and save the image only once.
-     * @param bool|null $disableTwemoji Disable Twemoji fallback rendering.
+     * @param bool|null $disableTwemoji Twemoji is enabled by default. Set true to use supplied or native emoji fonts instead.
      * @param 'light'|'dark'|null $colorScheme Emulated color scheme.
      * @param string|null $timezone Browser IANA timezone.
      * @param bool|null $viewportMobile Emulate a mobile viewport.
