@@ -53,6 +53,7 @@ final readonly class CreateUrlImageRequest extends BaseCreateImageRequest
      *        subrequests.
      * @param bool|null $identifyAsHcti Add HCTI's identifying request header.
      * @param ImageFormat|null $format File format used in the returned URL.
+     * @param list<RequestOverride>|null $requestOverrides Browser request block rules.
      */
     public function __construct(
         public string $url = '',
@@ -86,6 +87,7 @@ final readonly class CreateUrlImageRequest extends BaseCreateImageRequest
         public ?bool $includeHeadersOnSubrequests = null,
         public ?bool $identifyAsHcti = null,
         ?ImageFormat $format = null,
+        ?array $requestOverrides = null,
     ) {
         parent::__construct(
             selector: $selector,
@@ -111,6 +113,7 @@ final readonly class CreateUrlImageRequest extends BaseCreateImageRequest
             storageDestinationId: $storageDestinationId,
             transparentBackground: $transparentBackground,
             format: $format,
+            requestOverrides: $requestOverrides,
         );
     }
 }

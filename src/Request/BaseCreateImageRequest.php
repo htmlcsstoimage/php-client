@@ -41,6 +41,7 @@ abstract readonly class BaseCreateImageRequest implements BatchCreateImageReques
      *        destination identifier.
      * @param bool|null $transparentBackground Render a transparent background.
      * @param ImageFormat|null $format File format used in the returned URL.
+     * @param list<RequestOverride>|null $requestOverrides Browser request block rules; requires a paid plan.
      */
     public function __construct(
         public ?string $selector = null,
@@ -66,6 +67,7 @@ abstract readonly class BaseCreateImageRequest implements BatchCreateImageReques
         public ?string $storageDestinationId = null,
         public ?bool $transparentBackground = null,
         public ?ImageFormat $format = null,
+        public ?array $requestOverrides = null,
     ) {
     }
 }

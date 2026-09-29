@@ -14,6 +14,8 @@ use HtmlCssToImage\Request\CreateUrlImageRequest;
 use HtmlCssToImage\Request\PDFMargins;
 use HtmlCssToImage\Request\PDFOptions;
 use HtmlCssToImage\Request\PDFValueWithUnits;
+use HtmlCssToImage\Request\RequestOverride;
+use HtmlCssToImage\Request\RequestOverrideResourceType;
 use HtmlCssToImage\Render\RenderImageAspectRatio;
 use HtmlCssToImage\Render\RenderImageCrop;
 use HtmlCssToImage\Render\RenderImageCropPosition;
@@ -34,6 +36,20 @@ final class HtmlCssToImageClientTest extends TestCase
     private const API_ID = 'user_id';
 
     private const API_KEY = 'api_key';
+
+    public function testRequestOverridesUseEnumStringsAndAreNotSigned(): void
+    {
+        $http = new QueueHttpClient([new Response(200, [], '{"id":"123","url":"image-url"}')]);
+        $client = new HtmlCssToImageClient(self::API_ID, self::API_KEY, $http);
+        $request = new CreateUrlImageRequest(
+            url: 'https://example.com',
+            requestOverrides: [new RequestOverride('*.js', [RequestOverrideResourceType::Script, RequestOverrideResourceType::Fetch])],
+        );
+        $client->createImage($request);
+        $payload = json_decode((string) $http->requests[0]->getBody(), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame([['action' => 'block', 'url' => '*.js', 'resource_types' => ['script', 'fetch']]], $payload['request_overrides']);
+        self::assertStringNotContainsString('request_overrides', $client->generateCreateAndRenderUrl($request));
+    }
 
     public function testCreateImageMapsHtmlFontsPdfAndAuthorization(): void
     {

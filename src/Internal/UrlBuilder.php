@@ -92,7 +92,7 @@ final readonly class UrlBuilder
         /** @var list<array{0: string, 1: string}> $pairs */
         $pairs = [['url', $request->url]];
         $payload = $this->requestMapper->commonPayload($request, false);
-        unset($payload['format'], $payload['pdf_options']);
+        unset($payload['format'], $payload['pdf_options'], $payload['request_overrides']);
         $payload['css'] = $request->css;
         $payload['headers'] = $request->headers;
         $payload['additional_header_origins'] = $request->additionalHeaderOrigins;

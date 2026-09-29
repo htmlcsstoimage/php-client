@@ -70,6 +70,9 @@ final class RequestMapper
             'viewport_landscape' => $request->viewportLandscape,
             'media_type' => $request->mediaType,
             'proxy_id' => $request->proxyId,
+            'request_overrides' => $request->requestOverrides === null
+                ? null
+                : array_map(static fn ($rule): array => $rule->toArray(), $request->requestOverrides),
             'jumbo_max_width' => $request->jumboMaxWidth,
             'jumbo_max_height' => $request->jumboMaxHeight,
             'dedupe_duration_s' => $includeDedupe
