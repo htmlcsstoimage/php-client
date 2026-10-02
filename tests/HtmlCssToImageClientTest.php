@@ -16,6 +16,7 @@ use HtmlCssToImage\Request\PDFOptions;
 use HtmlCssToImage\Request\PDFValueWithUnits;
 use HtmlCssToImage\Request\RequestOverride;
 use HtmlCssToImage\Request\RequestOverrideResourceType;
+use HtmlCssToImage\Request\TemplatedBatchImageOptions;
 use HtmlCssToImage\Render\RenderImageAspectRatio;
 use HtmlCssToImage\Render\RenderImageCrop;
 use HtmlCssToImage\Render\RenderImageCropPosition;
@@ -36,6 +37,43 @@ final class HtmlCssToImageClientTest extends TestCase
     private const API_ID = 'user_id';
 
     private const API_KEY = 'api_key';
+
+    public function testTemplatedBatchPreservesOptionalFieldsAndNullValues(): void
+    {
+        $http = new QueueHttpClient([new Response(200, [], '{"images":[{"id":"two","url":"two"},{"id":"one","url":"one"}]}')]);
+        $client = new HtmlCssToImageClient(self::API_ID, self::API_KEY, $http);
+        $defaults = new TemplatedBatchImageOptions(templateId: 't-card', templateVersion: 3, format: ImageFormat::WEBP, templateValues: ['brand' => ['name' => 'Acme', 'color' => 'red']]);
+        $variation = new TemplatedBatchImageOptions(templateId: 't-other', templateValues: ['brand' => ['color' => null], 'tags' => [], 'active' => false]);
+        $result = $client->createTemplatedImageBatch([new TemplatedBatchImageOptions(), $variation], $defaults);
+        self::assertTrue($result->success);
+        self::assertSame(['two', 'one'], array_map(fn ($image) => $image->id, $result->images));
+        $request = $http->requests[0];
+        self::assertSame('POST', $request->getMethod());
+        self::assertSame('/v1/image/batch/templated', $request->getUri()->getPath());
+        $payload = json_decode((string) $request->getBody(), flags: JSON_THROW_ON_ERROR);
+        self::assertEquals((object) [], $payload->variations[0]);
+        self::assertSame('t-card', $payload->default_options->template_id);
+        self::assertSame(3, $payload->default_options->template_version);
+        self::assertSame('webp', $payload->default_options->format);
+        self::assertFalse(property_exists($payload->variations[1], 'template_version'));
+        self::assertNull($payload->variations[1]->template_values->brand->color);
+        self::assertSame([], $payload->variations[1]->template_values->tags);
+        self::assertFalse($payload->variations[1]->template_values->active);
+        self::assertSame('red', $defaults->templateValues['brand']['color']);
+    }
+
+    public function testTemplatedBatchEmptyAndError(): void
+    {
+        $http = new QueueHttpClient([new Response(400, [], '{"error":"Bad Request","message":"Invalid template"}')]);
+        $client = new HtmlCssToImageClient(self::API_ID, self::API_KEY, $http);
+        self::assertTrue($client->createTemplatedImageBatch([])->success);
+        self::assertSame([], $http->requests);
+        $result = $client->createTemplatedImageBatch([new TemplatedBatchImageOptions(templateId: 't-missing')]);
+        self::assertFalse($result->success);
+        self::assertSame('Invalid template', $result->message);
+        $payload = json_decode((string) $http->requests[0]->getBody(), true, flags: JSON_THROW_ON_ERROR);
+        self::assertArrayNotHasKey('default_options', $payload);
+    }
 
     public function testRequestOverridesUseEnumStringsAndAreNotSigned(): void
     {

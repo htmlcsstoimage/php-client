@@ -108,7 +108,7 @@ $result = $client->createImageBatch(
 );
 ```
 
-Only HTML/CSS and URL requests can be batched. Empty `html` or `url` values in variations are omitted so they can inherit from `defaultOptions`. An empty variation list returns a successful empty result without sending an HTTP request. Options unsupported by the batch API, such as `dedupeDurationS`, are not serialized. See the [batch API documentation](https://docs.htmlcsstoimage.com/getting-started/using-the-api/#batch-image-creation).
+`createImageBatch` accepts HTML/CSS and URL requests; use `createTemplatedImageBatch` for templates. Empty `html` or `url` values in variations are omitted so they can inherit from `defaultOptions`. An empty variation list returns a successful empty result without sending an HTTP request. Options unsupported by the batch API, such as `dedupeDurationS`, are not serialized. See the [batch API documentation](https://docs.htmlcsstoimage.com/getting-started/using-the-api/#batch-image-creation).
 
 ## Signed URLs
 
@@ -246,6 +246,7 @@ if (isset($result) && $result instanceof ApiErrorResponse) {
 | `fromEnvironment(...)` | `HtmlCssToImageClient` | Reads credentials from the environment. |
 | `createImage($request)` | success or error response | Sends `POST /v1/image`. |
 | `createImageBatch($variations, $defaultOptions = null)` | batch success or error response | Sends `POST /v1/image/batch`, unless the list is empty. |
+| `createTemplatedImageBatch($variations, $defaultOptions = null)` | batch success or error response | Sends `POST /v1/image/batch/templated`, unless the list is empty. |
 | `deleteImage($imageId)` | delete success or error response | Sends `DELETE /v1/image/{id}`. |
 | `deleteImageBatch($imageIds)` | delete success or error response | Sends `DELETE /v1/image/batch`. |
 | `imageUrl($imageId, $renderOptions = null)` | `string` | Builds an existing-image URL locally. |
@@ -271,3 +272,24 @@ Packagist derives package versions from Git tags, so `composer.json` intentional
 ## License
 
 MIT
+
+## Templated image batches
+
+Create images from one or more templates with shared defaults and ordered variations:
+
+```php
+use HtmlCssToImage\Request\TemplatedBatchImageOptions;
+use HtmlCssToImage\ImageFormat;
+
+$result = $client->createTemplatedImageBatch(
+    [
+        new TemplatedBatchImageOptions(templateValues: ['title' => 'First']),
+        new TemplatedBatchImageOptions(templateId: 't-other', templateValues: ['title' => 'Second']),
+    ],
+    new TemplatedBatchImageOptions(templateId: 't-card', templateVersion: 3, format: ImageFormat::WEBP),
+);
+```
+
+Omitted fields inherit defaults. Supplying a template ID resets the inherited version; omit its version to use latest. Template value objects merge recursively on the API; arrays, scalars, and explicit null values replace defaults. Results preserve input order and identical images reuse existing assets. Each merged values object must be nonempty and satisfy its template's required variables.
+
+See the [API reference](https://docs.htmlcsstoimage.com/getting-started/using-the-api/#batch-templated-image-creation) for plan limits and examples.

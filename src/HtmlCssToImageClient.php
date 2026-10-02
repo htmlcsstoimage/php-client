@@ -13,6 +13,7 @@ use HtmlCssToImage\Request\BatchCreateImageRequest;
 use HtmlCssToImage\Request\CreateImageRequest;
 use HtmlCssToImage\Request\CreateTemplatedImageRequest;
 use HtmlCssToImage\Request\CreateUrlImageRequest;
+use HtmlCssToImage\Request\TemplatedBatchImageOptions;
 use HtmlCssToImage\Render\RenderImageOptions;
 use HtmlCssToImage\Response\ApiErrorResponse;
 use HtmlCssToImage\Response\CreateImageBatchSuccessResponse;
@@ -162,6 +163,29 @@ final class HtmlCssToImageClient implements HtmlCssToImageClientInterface
         $response = $this->transport->post('/v1/image/batch', $payload);
 
         return $this->responseMapper->batch($response);
+    }
+
+    /**
+     * Create a template batch with shared defaults and ordered results.
+     * @param list<TemplatedBatchImageOptions> $variations Per-image values.
+     * @param TemplatedBatchImageOptions|null $defaultOptions Shared defaults.
+     * @return CreateImageBatchSuccessResponse|ApiErrorResponse
+     */
+    public function createTemplatedImageBatch(
+        array $variations,
+        ?TemplatedBatchImageOptions $defaultOptions = null,
+    ): CreateImageBatchSuccessResponse|ApiErrorResponse {
+        if ($variations === []) {
+            return new CreateImageBatchSuccessResponse([]);
+        }
+        $payload = ['variations' => array_map(
+            fn (TemplatedBatchImageOptions $item): \stdClass => $this->requestMapper->templatedBatchOptions($item),
+            $variations,
+        )];
+        if ($defaultOptions !== null) {
+            $payload['default_options'] = $this->requestMapper->templatedBatchOptions($defaultOptions);
+        }
+        return $this->responseMapper->batch($this->transport->post('/v1/image/batch/templated', $payload));
     }
 
     /**

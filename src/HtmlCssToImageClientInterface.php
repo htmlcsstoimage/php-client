@@ -8,6 +8,7 @@ use HtmlCssToImage\Request\BatchCreateImageRequest;
 use HtmlCssToImage\Request\CreateImageRequest;
 use HtmlCssToImage\Request\CreateTemplatedImageRequest;
 use HtmlCssToImage\Request\CreateUrlImageRequest;
+use HtmlCssToImage\Request\TemplatedBatchImageOptions;
 use HtmlCssToImage\Render\RenderImageOptions;
 use HtmlCssToImage\Response\ApiErrorResponse;
 use HtmlCssToImage\Response\CreateImageBatchSuccessResponse;
@@ -71,6 +72,17 @@ interface HtmlCssToImageClientInterface
     public function createImageBatch(
         array $variations,
         ?BatchCreateImageRequest $defaultOptions = null,
+    ): CreateImageBatchSuccessResponse|ApiErrorResponse;
+
+    /**
+     * Create a template batch with shared defaults and ordered results.
+     * @param list<TemplatedBatchImageOptions> $variations Per-image values.
+     * @param TemplatedBatchImageOptions|null $defaultOptions Shared defaults.
+     * @return CreateImageBatchSuccessResponse|ApiErrorResponse
+     */
+    public function createTemplatedImageBatch(
+        array $variations,
+        ?TemplatedBatchImageOptions $defaultOptions = null,
     ): CreateImageBatchSuccessResponse|ApiErrorResponse;
 
     /**

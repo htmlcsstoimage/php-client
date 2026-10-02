@@ -11,6 +11,7 @@ use HtmlCssToImage\Request\CreateTemplatedImageRequest;
 use HtmlCssToImage\Request\CreateUrlImageRequest;
 use HtmlCssToImage\Request\PDFOptions;
 use HtmlCssToImage\Request\PDFValueWithUnits;
+use HtmlCssToImage\Request\TemplatedBatchImageOptions;
 use InvalidArgumentException;
 
 /** @internal */
@@ -39,6 +40,17 @@ final class RequestMapper
                 sprintf('Unsupported request type: %s', $request::class),
             ),
         };
+    }
+
+    /** Map optional fields without filtering nulls inside template values. */
+    public function templatedBatchOptions(TemplatedBatchImageOptions $request): \stdClass
+    {
+        return (object) self::withoutNulls([
+            'template_id' => $request->templateId,
+            'template_version' => $request->templateVersion,
+            'template_values' => $request->templateValues === null ? null : (object) $request->templateValues,
+            'format' => $request->format?->value,
+        ]);
     }
 
     /**
