@@ -6,6 +6,7 @@ namespace HtmlCssToImage;
 
 use HtmlCssToImage\Request\BatchCreateImageRequest;
 use HtmlCssToImage\Request\CreateImageRequest;
+use HtmlCssToImage\Request\CreateRecordingRequest;
 use HtmlCssToImage\Request\CreateTemplatedImageRequest;
 use HtmlCssToImage\Request\CreateUrlImageRequest;
 use HtmlCssToImage\Request\TemplatedBatchImageOptions;
@@ -13,7 +14,10 @@ use HtmlCssToImage\Render\RenderImageOptions;
 use HtmlCssToImage\Response\ApiErrorResponse;
 use HtmlCssToImage\Response\CreateImageBatchSuccessResponse;
 use HtmlCssToImage\Response\CreateImageSuccessResponse;
+use HtmlCssToImage\Response\CreateRecordingSuccessResponse;
 use HtmlCssToImage\Response\DeleteImageSuccessResponse;
+use HtmlCssToImage\Response\DeleteRecordingSuccessResponse;
+use HtmlCssToImage\Response\RecordingStatusSuccessResponse;
 use Psr\Http\Client\ClientInterface;
 
 /**
@@ -36,6 +40,22 @@ interface HtmlCssToImageClientInterface
         ?ClientInterface $httpClient = null,
         string $baseUrl = 'https://hcti.io',
     ): self;
+
+    /** Create an HTML/CSS or URL recording. The returned recording URL can be embedded or requested directly; it waits until the recording is ready.
+     * @see https://docs.htmlcsstoimage.com/getting-started/recordings/
+     */
+    public function createRecording(CreateRecordingRequest $request): CreateRecordingSuccessResponse|ApiErrorResponse;
+
+    /** Fetch status once. Optional; HTTP 200 and 202 both return lifecycle information. */
+    public function fetchRecordingStatus(string $recordingId): RecordingStatusSuccessResponse|ApiErrorResponse;
+
+    /** Delete a recording and clear its media from the CDN. */
+    public function deleteRecording(string $recordingId): DeleteRecordingSuccessResponse|ApiErrorResponse;
+
+    /** Delete recording IDs in one API call. An empty list returns success without sending a request.
+     * @param list<string> $recordingIds
+     */
+    public function deleteRecordingBatch(array $recordingIds): DeleteRecordingSuccessResponse|ApiErrorResponse;
 
     /**
      * Create one image from HTML/CSS, a URL, or a saved template.
@@ -97,7 +117,8 @@ interface HtmlCssToImageClientInterface
     ): DeleteImageSuccessResponse|ApiErrorResponse;
 
     /**
-     * Delete several generated images in one API call.
+     * Delete several generated images in one API call. An empty list returns
+     * success without sending a request.
      *
      * @param list<string> $imageIds HCTI image identifiers to delete.
      *

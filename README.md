@@ -110,6 +110,62 @@ $result = $client->createImageBatch(
 
 `createImageBatch` accepts HTML/CSS and URL requests; use `createTemplatedImageBatch` for templates. Empty `html` or `url` values in variations are omitted so they can inherit from `defaultOptions`. An empty variation list returns a successful empty result without sending an HTTP request. Options unsupported by the batch API, such as `dedupeDurationS`, are not serialized. See the [batch API documentation](https://docs.htmlcsstoimage.com/getting-started/using-the-api/#batch-image-creation).
 
+## Recordings
+
+Use `createRecording` with `CreateHtmlCssRecordingRequest` or `CreateUrlRecordingRequest` to record HTML/CSS or a public webpage as MP4, WebM, or GIF:
+
+```php
+use HtmlCssToImage\Recording\RecordingFormat;
+use HtmlCssToImage\Recording\RecordingOutputOptions;
+use HtmlCssToImage\Recording\RecordingSimpleScrollAction;
+use HtmlCssToImage\Request\CreateHtmlCssRecordingRequest;
+use HtmlCssToImage\Request\CreateUrlRecordingRequest;
+
+$result = $client->createRecording(new CreateUrlRecordingRequest(
+    url: 'https://example.com',
+    durationMs: 10000,
+    viewportWidth: 1280,
+    viewportHeight: 720,
+    actions: [new RecordingSimpleScrollAction()],
+    output: new RecordingOutputOptions(format: RecordingFormat::MP4),
+));
+if ($result->success) {
+    echo "<video src=\"{$result->recordingUrl}\" controls></video>";
+} else {
+    echo $result->error;
+}
+
+$animation = $client->createRecording(new CreateHtmlCssRecordingRequest(
+    html: '<h1>Hello</h1>',
+    durationMs: 3000,
+    output: new RecordingOutputOptions(format: RecordingFormat::GIF, scale: 0.5),
+));
+```
+
+Both request types share browser settings, triggers, ordered actions, and output options. Use the typed classes in `HtmlCssToImage\Recording`, such as `RecordingClickAction(selector: '#start')` and `RecordingElementVisibleTrigger(selector: '#ready')`. For JavaScript actions, `ifError: null` fails on a script error; `ifError: []` ignores errors. Empty branch arrays are preserved in JSON.
+
+```php
+$deleted = $client->deleteRecording('recording-id');
+$batchDeleted = $client->deleteRecordingBatch(['first-id', 'second-id']);
+```
+
+Deletion returns `DeleteRecordingSuccessResponse` when accepted. An empty `deleteRecordingBatch` list returns success without sending an HTTP request. Recording methods that send a request return the existing `ApiErrorResponse` on API errors and propagate PSR-18 transport failures.
+
+Optional settings use the API defaults. Recordings have no audio. Creation returns an ID, status URL, and recording URL. The recording URL can be embedded or requested directly; the request waits until the recording is ready.
+
+Checking status is optional. Use `fetchRecordingStatus` when a workflow needs lifecycle details:
+
+```php
+$status = $client->fetchRecordingStatus('recording-id');
+if ($status->success) {
+    echo $status->status->value;
+}
+```
+
+A status fetch makes one request. HTTP 200 and 202 both return status information; `ready`, `failed`, and `cancelled` are terminal states. Statuses added by newer API versions map to `RecordingStatus::Unknown`. An error can describe an earlier, retryable attempt. A successful status fetch can report a failed recording.
+
+See the [recording guide](https://docs.htmlcsstoimage.com/getting-started/recordings/), [actions reference](https://docs.htmlcsstoimage.com/parameters/actions/), and [trigger reference](https://docs.htmlcsstoimage.com/parameters/trigger/) for the timeline, output options, and examples.
+
 ## Signed URLs
 
 The signed URL helpers perform no network request. They create the exact query string, sign it with HMAC-SHA256 using the API key, and return a URL that can be shared without exposing that key.
@@ -248,11 +304,15 @@ if (isset($result) && $result instanceof ApiErrorResponse) {
 | `createImageBatch($variations, $defaultOptions = null)` | batch success or error response | Sends `POST /v1/image/batch`, unless the list is empty. |
 | `createTemplatedImageBatch($variations, $defaultOptions = null)` | batch success or error response | Sends `POST /v1/image/batch/templated`, unless the list is empty. |
 | `deleteImage($imageId)` | delete success or error response | Sends `DELETE /v1/image/{id}`. |
-| `deleteImageBatch($imageIds)` | delete success or error response | Sends `DELETE /v1/image/batch`. |
+| `deleteImageBatch($imageIds)` | delete success or error response | Sends `DELETE /v1/image/batch`, unless the list is empty. |
 | `imageUrl($imageId, $renderOptions = null)` | `string` | Builds an existing-image URL locally. |
 | `generateTemplatedImageUrl($request, $renderOptions = null)` | `string` | Builds and signs a template URL from a request object locally. |
 | `generateTemplatedImageUrlFromValues(...)` | `string` | Builds and signs a template URL from an ID and values locally. |
 | `generateCreateAndRenderUrl(...)` | `string` | Builds and signs a URL screenshot locally. |
+| `createRecording($request)` | recording success or error response | Sends `POST /v1/recording`. |
+| `fetchRecordingStatus($recordingId)` | status success or error response | Sends `GET /v1/recordings/{id}/status`. |
+| `deleteRecording($recordingId)` | delete success or error response | Sends `DELETE /v1/recordings/{id}`. |
+| `deleteRecordingBatch($recordingIds)` | delete success or error response | Sends `DELETE /v1/recordings/batch`, unless the list is empty. |
 
 `HtmlCssToImageClient` implements `HtmlCssToImageClientInterface`. Public request, response, PDF, and render/crop classes include PHPDoc for their constructors, properties, parameters, return types, exceptions, and IDE help.
 

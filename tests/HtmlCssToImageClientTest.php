@@ -527,6 +527,17 @@ final class HtmlCssToImageClientTest extends TestCase
         );
     }
 
+    public function testEmptyDeleteImageBatchSucceedsWithoutRequest(): void
+    {
+        $http = new QueueHttpClient([]);
+        $client = new HtmlCssToImageClient(self::API_ID, self::API_KEY, $http);
+
+        $result = $client->deleteImageBatch([]);
+
+        self::assertInstanceOf(DeleteImageSuccessResponse::class, $result);
+        self::assertSame([], $http->requests);
+    }
+
     public function testDeleteImageAndBatch(): void
     {
         $http = new QueueHttpClient([

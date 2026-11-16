@@ -109,17 +109,9 @@ final class RequestMapper
             : $request->html;
         $payload['css'] = $request->css;
 
-        if ($request->googleFonts !== null && $request->googleFonts !== []) {
-            $fonts = [];
-            foreach ($request->googleFonts as $font) {
-                $processed = str_replace(' ', '+', trim($font));
-                if ($processed !== '' && !in_array($processed, $fonts, true)) {
-                    $fonts[] = $processed;
-                }
-            }
-            if ($fonts !== []) {
-                $payload['google_fonts'] = implode('|', $fonts);
-            }
+        $fonts = self::googleFonts($request->googleFonts);
+        if ($fonts !== null) {
+            $payload['google_fonts'] = $fonts;
         }
 
         return self::withoutNulls($payload);
@@ -177,6 +169,19 @@ final class RequestMapper
         }
 
         return self::withoutNulls($payload);
+    }
+
+    /** @param list<string>|null $fontNames */
+    public static function googleFonts(?array $fontNames): ?string
+    {
+        $fonts = [];
+        foreach ($fontNames ?? [] as $font) {
+            $processed = str_replace(' ', '+', trim($font));
+            if ($processed !== '' && !in_array($processed, $fonts, true)) {
+                $fonts[] = $processed;
+            }
+        }
+        return $fonts === [] ? null : implode('|', $fonts);
     }
 
     private static function pdfValueToString(
