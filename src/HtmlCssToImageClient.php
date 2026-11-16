@@ -6,11 +6,13 @@ namespace HtmlCssToImage;
 
 use GuzzleHttp\Client as GuzzleClient;
 use HtmlCssToImage\Internal\HttpTransport;
+use HtmlCssToImage\Internal\RecordingMapper;
 use HtmlCssToImage\Internal\RequestMapper;
 use HtmlCssToImage\Internal\ResponseMapper;
 use HtmlCssToImage\Internal\UrlBuilder;
 use HtmlCssToImage\Request\BatchCreateImageRequest;
 use HtmlCssToImage\Request\CreateImageRequest;
+use HtmlCssToImage\Request\CreateRecordingRequest;
 use HtmlCssToImage\Request\CreateTemplatedImageRequest;
 use HtmlCssToImage\Request\CreateUrlImageRequest;
 use HtmlCssToImage\Request\TemplatedBatchImageOptions;
@@ -18,7 +20,10 @@ use HtmlCssToImage\Render\RenderImageOptions;
 use HtmlCssToImage\Response\ApiErrorResponse;
 use HtmlCssToImage\Response\CreateImageBatchSuccessResponse;
 use HtmlCssToImage\Response\CreateImageSuccessResponse;
+use HtmlCssToImage\Response\CreateRecordingSuccessResponse;
 use HtmlCssToImage\Response\DeleteImageSuccessResponse;
+use HtmlCssToImage\Response\DeleteRecordingSuccessResponse;
+use HtmlCssToImage\Response\RecordingStatusSuccessResponse;
 use JsonException;
 use Psr\Http\Client\ClientInterface;
 use RuntimeException;
@@ -101,6 +106,45 @@ final class HtmlCssToImageClient implements HtmlCssToImageClientInterface
         }
 
         return new self($apiId, $apiKey, $httpClient, $baseUrl);
+    }
+
+    /** Create an HTML/CSS or URL recording. The returned recording URL can be embedded or requested directly; it waits until the recording is ready.
+     * @see https://docs.htmlcsstoimage.com/getting-started/recordings/
+     */
+    public function createRecording(CreateRecordingRequest $request): CreateRecordingSuccessResponse|ApiErrorResponse
+    {
+        return $this->responseMapper->recording(
+            $this->transport->post('/v1/recording', RecordingMapper::map($request)),
+        );
+    }
+
+    /** Fetch status once. Optional; HTTP 200 and 202 both return lifecycle information. */
+    public function fetchRecordingStatus(string $recordingId): RecordingStatusSuccessResponse|ApiErrorResponse
+    {
+        return $this->responseMapper->recordingStatus(
+            $this->transport->get("/v1/recordings/{$recordingId}/status"),
+        );
+    }
+
+    /** Delete a recording and clear its media from the CDN. */
+    public function deleteRecording(string $recordingId): DeleteRecordingSuccessResponse|ApiErrorResponse
+    {
+        return $this->responseMapper->deleteRecording(
+            $this->transport->delete("/v1/recordings/{$recordingId}"),
+        );
+    }
+
+    /** Delete recording IDs in one API call. An empty list returns success without sending a request.
+     * @param list<string> $recordingIds
+     */
+    public function deleteRecordingBatch(array $recordingIds): DeleteRecordingSuccessResponse|ApiErrorResponse
+    {
+        if ($recordingIds === []) {
+            return new DeleteRecordingSuccessResponse();
+        }
+        return $this->responseMapper->deleteRecording(
+            $this->transport->delete('/v1/recordings/batch', ['ids' => $recordingIds]),
+        );
     }
 
     /**
@@ -206,7 +250,8 @@ final class HtmlCssToImageClient implements HtmlCssToImageClientInterface
     }
 
     /**
-     * Delete several generated images in one API call.
+     * Delete several generated images in one API call. An empty list returns
+     * success without sending a request.
      *
      * @param list<string> $imageIds HCTI image identifiers to delete.
      *
@@ -217,6 +262,10 @@ final class HtmlCssToImageClient implements HtmlCssToImageClientInterface
     public function deleteImageBatch(
         array $imageIds,
     ): DeleteImageSuccessResponse|ApiErrorResponse {
+        if ($imageIds === []) {
+            return new DeleteImageSuccessResponse();
+        }
+
         $response = $this->transport->delete(
             '/v1/image/batch',
             ['ids' => $imageIds],

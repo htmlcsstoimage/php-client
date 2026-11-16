@@ -19,6 +19,18 @@ final readonly class HttpTransport
     ) {
     }
 
+    public function get(string $path): ResponseInterface
+    {
+        return $this->httpClient->sendRequest(new HttpRequest(
+            'GET',
+            "{$this->baseUrl}{$path}",
+            [
+                'Authorization' => $this->authorizationHeader,
+                'User-Agent' => LibraryInfo::userAgent(),
+            ],
+        ));
+    }
+
     /**
      * @param array<string, mixed> $payload
      *

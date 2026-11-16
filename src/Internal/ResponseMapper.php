@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace HtmlCssToImage\Internal;
 
+use HtmlCssToImage\Recording\RecordingError;
+use HtmlCssToImage\Recording\RecordingStatus;
 use HtmlCssToImage\Response\ApiErrorResponse;
 use HtmlCssToImage\Response\CreateImageBatchSuccessResponse;
 use HtmlCssToImage\Response\CreateImageSuccessResponse;
+use HtmlCssToImage\Response\CreateRecordingSuccessResponse;
 use HtmlCssToImage\Response\DeleteImageSuccessResponse;
+use HtmlCssToImage\Response\DeleteRecordingSuccessResponse;
+use HtmlCssToImage\Response\RecordingStatusSuccessResponse;
 use HtmlCssToImage\Response\ValidationError;
 use JsonException;
 use Psr\Http\Message\ResponseInterface;
@@ -16,6 +21,82 @@ use UnexpectedValueException;
 /** @internal */
 final class ResponseMapper
 {
+    public function recording(ResponseInterface $response): CreateRecordingSuccessResponse|ApiErrorResponse
+    {
+        $data = self::decodeJson($response);
+        if (!self::isSuccessStatus($response)) {
+            return self::error($response, $data);
+        }
+        return new CreateRecordingSuccessResponse(
+            id: self::requiredString($data, 'id', 'recording creation'),
+            statusUrl: self::requiredString($data, 'status_url', 'recording creation'),
+            recordingUrl: self::requiredString($data, 'recording_url', 'recording creation'),
+        );
+    }
+
+    public function recordingStatus(ResponseInterface $response): RecordingStatusSuccessResponse|ApiErrorResponse
+    {
+        $data = self::decodeJson($response);
+        if (!self::isSuccessStatus($response)) {
+            return self::error($response, $data);
+        }
+        $error = null;
+        $rawError = $data['error'] ?? null;
+        if ($rawError !== null) {
+            if (!is_array($rawError)) {
+                throw new UnexpectedValueException('Recording error must be an object.');
+            }
+            $error = new RecordingError(
+                code: self::responseString($rawError['code'] ?? null),
+                message: self::responseString($rawError['message'] ?? null),
+                occurredAt: self::responseString($rawError['occurred_at'] ?? null),
+                retryable: self::recordingBool($rawError['retryable'] ?? null) ?? false,
+                actionPath: isset($rawError['action_path']) ? self::responseString($rawError['action_path']) : null,
+            );
+        }
+        $status = RecordingStatus::tryFrom(self::requiredString($data, 'status', 'recording status')) ?? RecordingStatus::Unknown;
+        return new RecordingStatusSuccessResponse(
+            id: self::requiredString($data, 'id', 'recording status'),
+            recordingUrl: self::requiredString($data, 'recording_url', 'recording status'),
+            status: $status,
+            statusEnteredAt: self::requiredString($data, 'status_entered_at', 'recording status'),
+            attemptCount: self::recordingInt($data['attempt_count'] ?? null) ?? 0,
+            storedDurationMs: self::recordingInt($data['stored_duration_ms'] ?? null),
+            storageDestinationHctiStorageDisabled: self::recordingBool($data['storage_destination_hcti_storage_disabled'] ?? null),
+            error: $error,
+        );
+    }
+
+    public function deleteRecording(ResponseInterface $response): DeleteRecordingSuccessResponse|ApiErrorResponse
+    {
+        if (self::isSuccessStatus($response)) {
+            return new DeleteRecordingSuccessResponse();
+        }
+        return self::error($response, self::decodeJson($response));
+    }
+
+    private static function recordingInt(mixed $value): ?int
+    {
+        if ($value === null) {
+            return null;
+        }
+        if (is_int($value)) {
+            return $value;
+        }
+        if (is_string($value) && preg_match('/^-?[0-9]+$/D', $value) === 1) {
+            return (int) $value;
+        }
+        throw new UnexpectedValueException('Recording response must contain integer counts and durations.');
+    }
+
+    private static function recordingBool(mixed $value): ?bool
+    {
+        if ($value === null || is_bool($value)) {
+            return $value;
+        }
+        throw new UnexpectedValueException('Recording response must contain boolean flags.');
+    }
+
     /** @throws UnexpectedValueException When a successful response is malformed. */
     public function image(
         ResponseInterface $response,
