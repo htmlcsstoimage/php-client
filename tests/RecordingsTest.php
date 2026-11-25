@@ -9,6 +9,9 @@ use HtmlCssToImage\HtmlCssToImageClient;
 use HtmlCssToImage\HtmlCssToImageClientInterface;
 use HtmlCssToImage\Recording\CoordinatesScrollTarget;
 use HtmlCssToImage\Recording\PositionScrollTarget;
+use HtmlCssToImage\Recording\RecordingAssetAudio;
+use HtmlCssToImage\Recording\RecordingAudioEndBehavior;
+use HtmlCssToImage\Recording\RecordingUrlAudio;
 use HtmlCssToImage\Recording\RecordingClickAction;
 use HtmlCssToImage\Recording\RecordingDurationMode;
 use HtmlCssToImage\Recording\RecordingElementVisibleTrigger;
@@ -49,6 +52,7 @@ final class RecordingsTest extends TestCase
         $request = new CreateHtmlCssRecordingRequest(
             html: '<h1>Hello</h1>', durationMs: 1000,
             googleFonts: [' Roboto ', 'Open Sans', 'Open Sans'],
+            audio: new RecordingAssetAudio(assetId: 'asset_1'),
         );
         $result = $client->createRecording($request);
         self::assertInstanceOf(CreateRecordingSuccessResponse::class, $result);
@@ -62,7 +66,7 @@ final class RecordingsTest extends TestCase
         self::assertSame('Basic aWQ6a2V5', $sent->getHeaderLine('Authorization'));
         self::assertSame('application/json', $sent->getHeaderLine('Content-Type'));
         self::assertSame([
-            'duration_ms' => 1000, 'html' => '<h1>Hello</h1>',
+            'duration_ms' => 1000, 'audio' => ['asset_id' => 'asset_1'], 'html' => '<h1>Hello</h1>',
             'google_fonts' => 'Roboto|Open+Sans',
         ], json_decode((string) $sent->getBody(), true, flags: JSON_THROW_ON_ERROR));
         self::assertSame([' Roboto ', 'Open Sans', 'Open Sans'], $request->googleFonts);
@@ -87,6 +91,10 @@ final class RecordingsTest extends TestCase
             skipScrollPreload: true, durationMode: RecordingDurationMode::AtLeast,
             requestOverrides: [new RequestOverride(resourceTypes: [RequestOverrideResourceType::Script])],
             output: new RecordingOutputOptions(format: RecordingFormat::WebM, fps: 60, scale: 0.5),
+            audio: new RecordingUrlAudio(
+                url: 'https://cdn.example.com/audio/intro.mp3', sourceStartMs: 0, delayMs: 500,
+                whenAudioEnds: RecordingAudioEndBehavior::TrimVideo, errorOnSourceInvalid: false,
+            ),
             trigger: new RecordingElementVisibleTrigger(selector: '#ready'),
             actions: [
                 new RecordingLocateSelectorAction(selector: '#modal', ifNotFound: [], ifFound: [
@@ -105,6 +113,10 @@ final class RecordingsTest extends TestCase
         );
         self::assertTrue($client->createRecording($request)->success);
         $data = json_decode((string) $http->requests[0]->getBody(), true, flags: JSON_THROW_ON_ERROR);
+        self::assertEquals([
+            'url' => 'https://cdn.example.com/audio/intro.mp3', 'source_start_ms' => 0, 'delay_ms' => 500,
+            'when_audio_ends' => 'trim_video', 'error_on_source_invalid' => false,
+        ], $data['audio']);
         foreach ([
             'viewport_width' => 1280, 'viewport_height' => 720, 'device_scale' => 2,
             'dedupe_duration_s' => 0, 'disable_twemoji' => false, 'color_scheme' => 'dark',

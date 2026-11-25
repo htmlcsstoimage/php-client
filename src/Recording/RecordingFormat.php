@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HtmlCssToImage\Recording;
 
-/** Recording media format. Recordings do not include audio.
+/** Recording media format. MP4 and WebM support an optional soundtrack.
  * @api
  */
 enum RecordingFormat: string
