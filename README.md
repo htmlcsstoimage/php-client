@@ -151,7 +151,9 @@ $batchDeleted = $client->deleteRecordingBatch(['first-id', 'second-id']);
 
 Deletion returns `DeleteRecordingSuccessResponse` when accepted. An empty `deleteRecordingBatch` list returns success without sending an HTTP request. Recording methods that send a request return the existing `ApiErrorResponse` on API errors and propagate PSR-18 transport failures.
 
-Optional settings use the API defaults. Recordings have no audio. Creation returns an ID, status URL, and recording URL. The recording URL can be embedded or requested directly; the request waits until the recording is ready.
+Optional settings use the API defaults. Creation returns an ID, status URL, and recording URL. The recording URL can be embedded or requested directly; the request waits until the recording is ready.
+
+For an MP4 or WebM soundtrack, import `RecordingAssetAudio` or `RecordingUrlAudio` from `HtmlCssToImage\Recording`. Pass `audio: new RecordingAssetAudio(assetId: "YOUR_ASSET_ID", delayMs: 500)` or `audio: new RecordingUrlAudio(url: "https://cdn.example.com/audio/intro.mp3")` to either request constructor. [Audio sources and playback options](https://docs.htmlcsstoimage.com/parameters/audio/).
 
 Checking status is optional. Use `fetchRecordingStatus` when a workflow needs lifecycle details:
 

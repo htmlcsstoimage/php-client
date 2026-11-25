@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HtmlCssToImage\Request;
 
 use HtmlCssToImage\Recording\RecordingAction;
+use HtmlCssToImage\Recording\RecordingAudio;
 use HtmlCssToImage\Recording\RecordingDurationMode;
 use HtmlCssToImage\Recording\RecordingOutputOptions;
 use HtmlCssToImage\Recording\RecordingTrigger;
@@ -56,7 +57,9 @@ abstract readonly class BaseCreateRecordingRequest implements CreateRecordingReq
      * @param list<RecordingAction>|null $actions Ordered interactions. Leave null or empty to record the
      *     page without interactions. See https://docs.htmlcsstoimage.com/parameters/actions/
      * @param RecordingOutputOptions|null $output Output format, frame rate, and scale. Defaults to MP4
-     *     at 30 fps without audio. See https://docs.htmlcsstoimage.com/parameters/output/
+     *     at 30 fps. See https://docs.htmlcsstoimage.com/parameters/output/
+     * @param RecordingAudio|null $audio Optional MP4 or WebM soundtrack from an asset ID or public URL.
+     *     See https://docs.htmlcsstoimage.com/parameters/audio/
      * @param RecordingDurationMode|null $durationMode How duration_ms limits the timeline. Defaults to
      *     at_most. See https://docs.htmlcsstoimage.com/parameters/duration_mode/
      * @param bool|null $deferRender Wait to render until media or storage is requested. Defaults to
@@ -89,6 +92,7 @@ abstract readonly class BaseCreateRecordingRequest implements CreateRecordingReq
         public ?RecordingDurationMode $durationMode = null,
         public ?bool $deferRender = null,
         public ?bool $skipScrollPreload = null,
+        public ?RecordingAudio $audio = null,
     ) {
     }
 }
